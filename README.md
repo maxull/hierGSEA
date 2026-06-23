@@ -1,7 +1,7 @@
 # hierGSEA
 
 <p align="center">
-  <img src="hierGSEA_logo.png" alt="hierGSEA logo" width="220">
+  <img src="https://raw.githubusercontent.com/maxull/hierGSEA/main/hierGSEA_logo.png" alt="hierGSEA logo" width="220">
 </p>
 
 <p align="center">
