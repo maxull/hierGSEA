@@ -3,3 +3,7 @@
 ^\.Rproj\.user$
 ^.*\.Rproj$
 ^local_preprint$
+^\.github$
+^_pkgdown\.yml$
+^release$
+^hierGSEA_logo\.png$

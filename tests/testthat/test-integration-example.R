@@ -63,10 +63,14 @@ test_that("Hierarchy plot returns tree geometry and a ggplot object", {
 test_that("Chronological example script runs end to end", {
     testthat::skip_if_not_installed("pkgload")
 
-    script_path <- normalizePath(
-        testthat::test_path("..", "..", "inst", "scripts", "run_single_fiber_bulk_example.R"),
-        winslash = "/"
-    )
+    installed_script_path <- system.file("scripts", "run_single_fiber_bulk_example.R", package = "hierGSEA")
+    source_script_path <- testthat::test_path("..", "..", "inst", "scripts", "run_single_fiber_bulk_example.R")
+
+    script_path <- if (nzchar(installed_script_path)) {
+        normalizePath(installed_script_path, winslash = "/")
+    } else {
+        normalizePath(source_script_path, winslash = "/")
+    }
     output_dir <- file.path(tempdir(), "hierGSEA_example_output")
     old_script_path <- Sys.getenv("HIERGSEA_SCRIPT_PATH", unset = NA_character_)
     old_run_mitocarta <- Sys.getenv("HIERGSEA_RUN_MITOCARTA_EXAMPLE", unset = NA_character_)

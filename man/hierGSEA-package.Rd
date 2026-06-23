@@ -9,6 +9,15 @@
 Utilities for hierarchy-aware post-processing of GSEA results from
 \code{clusterProfiler} and \code{ReactomePA}.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://maxull.github.io/hierGSEA/}
+  \item \url{https://github.com/maxull/hierGSEA}
+  \item Report bugs at \url{https://github.com/maxull/hierGSEA/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Max Ullrich \email{max@example.com}
 

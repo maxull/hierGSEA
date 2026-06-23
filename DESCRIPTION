@@ -27,16 +27,17 @@ Depends:
 Imports:
     dplyr,
     ggplot2,
+    magrittr,
     purrr,
     rlang,
     stats,
     stringr,
     tibble,
-    tidyr,
     utils
 Suggests:
     AnnotationDbi,
     clusterProfiler,
+    DOSE,
     knitr,
     org.Hs.eg.db,
     pkgdown,
