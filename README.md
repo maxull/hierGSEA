@@ -1,5 +1,13 @@
 # hierGSEA
 
+<p align="center">
+  <img src="hierGSEA_logo.png" alt="hierGSEA logo" width="220">
+</p>
+
+<p align="center">
+  <strong>Public beta:</strong> hierarchy-aware post-processing and visualization for GSEA outputs
+</p>
+
 `hierGSEA` is an R package for hierarchy-aware post-processing of GSEA outputs
 generated upstream by `clusterProfiler`, `ReactomePA`, or
 `clusterProfiler::GSEA()` with a hierarchical custom backend. The package keeps
@@ -34,13 +42,9 @@ This repository is currently structured as a GitHub-first package rather than a
 CRAN or Bioconductor release.
 
 ```r
-# local development install from the package root
 # install.packages("remotes")
-remotes::install_local(".")
+remotes::install_github("maxull/hierGSEA")
 ```
-
-If you later publish the repository on GitHub, replace that with
-`remotes::install_github("user-or-org/hierGSEA")`.
 
 ## Supported databases
 
@@ -98,7 +102,7 @@ reactome_hier <- hier_gsea(
 reactome_plot <- plot_hier_gsea(
   x = reactome_hier,
   tree_width = 0.40,
-  top_n_parents = 6
+  top_n_parents = 3
 )
 ```
 
@@ -184,6 +188,14 @@ That will build a browsable website with:
 - function reference pages
 - long-form methods documentation
 - a dedicated output-object reference article
+
+Public site URL:
+
+- <https://maxull.github.io/hierGSEA/>
+
+The repository also now includes a GitHub Actions workflow that can build and
+publish the pkgdown site automatically from `main` once GitHub Pages is enabled
+for the repository.
 
 ## Updating backend snapshots
 
