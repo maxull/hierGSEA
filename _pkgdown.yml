@@ -1,0 +1,52 @@
+template:
+  bootstrap: 5
+
+home:
+  title: hierGSEA
+  description: Hierarchy-aware post-processing and visualization for GSEA outputs from Reactome, GO, and MitoCarta workflows.
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [github]
+  components:
+    intro:
+      text: Overview
+      href: index.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    articles:
+      text: Articles
+      menu:
+      - text: Getting Started
+        href: articles/getting-started.html
+      - text: Methods and Statistical Rationale
+        href: articles/methods-and-statistical-rationale.html
+      - text: Output Object Reference
+        href: articles/output-object-reference.html
+
+reference:
+- title: Main workflow
+  contents:
+  - hier_gsea
+  - plot_hier_gsea
+
+- title: MitoCarta helpers
+  contents:
+  - mitocarta_term2gene
+  - mitocarta_term2name
+
+- title: Backend maintenance
+  contents:
+  - update_backend_data
+
+- title: Result object methods
+  contents:
+  - print.hier_gsea_result
+  - summary.hier_gsea_result
+  - hier_gsea_result
+
+- title: Example data
+  contents:
+  - single_fiber_bulk_rankings

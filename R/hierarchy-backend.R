@@ -1,0 +1,360 @@
+# The hierarchy backend functions are kept explicit on purpose. The package is
+# built for analysts who may need to inspect and adapt the hierarchy logic
+# without reverse-engineering compact graph code.
+
+.compute_shortest_levels <- function(edges_tbl, root_ids) {
+    child_map <- split(edges_tbl$child_id, edges_tbl$parent_id)
+    node_ids <- unique(c(edges_tbl$parent_id, edges_tbl$child_id, root_ids))
+
+    node_levels <- rep.int(Inf, length(node_ids))
+    names(node_levels) <- node_ids
+    node_levels[root_ids] <- 1
+
+    queue <- root_ids
+
+    while (length(queue) > 0) {
+        current_id <- queue[[1]]
+        queue <- queue[-1]
+
+        child_ids <- child_map[[current_id]]
+
+        if (length(child_ids) == 0) {
+            next
+        }
+
+        current_level <- node_levels[[current_id]]
+
+        for (child_id in child_ids) {
+            proposed_level <- current_level + 1
+
+            if (proposed_level < node_levels[[child_id]]) {
+                node_levels[[child_id]] <- proposed_level
+                queue <- c(queue, child_id)
+            }
+        }
+    }
+
+    tibble::tibble(
+        term_id = names(node_levels),
+        level = as.integer(node_levels)
+    ) %>%
+        dplyr::mutate(level = ifelse(is.infinite(.data$level), NA_integer_, .data$level))
+}
+
+.prepare_hierarchy_backend <- function(edges_tbl, term_tbl, db, ontology = NA_character_, metadata = list()) {
+    edges_tbl <- edges_tbl %>%
+        dplyr::distinct(.data$parent_id, .data$child_id, .keep_all = TRUE)
+
+    term_tbl <- term_tbl %>%
+        dplyr::distinct(.data$term_id, .keep_all = TRUE)
+
+    root_ids <- edges_tbl %>%
+        dplyr::filter(!.data$parent_id %in% .data$child_id) %>%
+        dplyr::pull(.data$parent_id) %>%
+        unique() %>%
+        sort()
+
+    levels_tbl <- .compute_shortest_levels(edges_tbl = edges_tbl, root_ids = root_ids)
+
+    parent_map <- split(edges_tbl$parent_id, edges_tbl$child_id)
+
+    term_tbl <- term_tbl %>%
+        dplyr::left_join(levels_tbl, by = "term_id") %>%
+        dplyr::mutate(
+            all_parent_ids = unname(parent_map[.data$term_id]),
+            all_parent_ids = purrr::map(.data$all_parent_ids, ~ unique(stats::na.omit(.x)))
+        )
+
+    term_tbl$canonical_parent_id <- NA_character_
+    term_tbl$canonical_path <- vector(mode = "list", length = nrow(term_tbl))
+    row_lookup <- seq_len(nrow(term_tbl))
+    names(row_lookup) <- term_tbl$term_id
+    level_lookup <- term_tbl$level
+    names(level_lookup) <- term_tbl$term_id
+
+    term_order <- term_tbl %>%
+        dplyr::arrange(.data$level, .data$term_id) %>%
+        dplyr::pull(.data$term_id)
+
+    path_lookup <- list()
+
+    for (term_id in term_order) {
+        row_index <- row_lookup[[term_id]]
+        parent_ids <- term_tbl$all_parent_ids[[row_index]]
+
+        if (length(parent_ids) == 0 || term_id %in% root_ids) {
+            term_tbl$canonical_parent_id[[row_index]] <- NA_character_
+            path_lookup[[term_id]] <- term_id
+            term_tbl$canonical_path[[row_index]] <- path_lookup[[term_id]]
+            next
+        }
+
+        parent_levels <- level_lookup[parent_ids]
+        min_parent_level <- min(parent_levels, na.rm = TRUE)
+        canonical_parent_id <- sort(parent_ids[parent_levels == min_parent_level])[1]
+
+        term_tbl$canonical_parent_id[[row_index]] <- canonical_parent_id
+        path_lookup[[term_id]] <- c(path_lookup[[canonical_parent_id]], term_id)
+        term_tbl$canonical_path[[row_index]] <- path_lookup[[term_id]]
+    }
+
+    term_tbl <- term_tbl %>%
+        dplyr::mutate(
+            canonical_path_string = purrr::map_chr(.data$canonical_path, ~ paste(.x, collapse = " > ")),
+            level_label = paste0("Level_", .data$level)
+        )
+
+    level_summary_tbl <- term_tbl %>%
+        dplyr::filter(!is.na(.data$level)) %>%
+        dplyr::count(.data$level, name = "n_terms") %>%
+        dplyr::mutate(level_label = paste0("Level_", .data$level))
+
+    list(
+        db = db,
+        ontology = ontology,
+        roots = root_ids,
+        edges = edges_tbl,
+        terms = term_tbl,
+        paths = term_tbl %>%
+            dplyr::select(
+                term_id,
+                term_name,
+                level,
+                level_label,
+                canonical_parent_id,
+                canonical_path,
+                canonical_path_string
+            ),
+        level_summary = level_summary_tbl,
+        metadata = metadata
+    )
+}
+
+.get_hierarchy_backend <- function(db, ontology = NULL) {
+    if (identical(db, "reactome")) {
+        return(reactome_hierarchy_data)
+    }
+
+    if (identical(db, "mitocarta")) {
+        return(mitocarta_hierarchy_data)
+    }
+
+    if (identical(db, "mitopathways")) {
+        return(mitocarta_hierarchy_data)
+    }
+
+    if (!identical(db, "go")) {
+        stop("Unsupported database backend requested.", call. = FALSE)
+    }
+
+    ontology <- toupper(ontology)
+
+    if (identical(ontology, "BP")) {
+        return(go_bp_hierarchy_data)
+    }
+
+    if (identical(ontology, "MF")) {
+        return(go_mf_hierarchy_data)
+    }
+
+    if (identical(ontology, "CC")) {
+        return(go_cc_hierarchy_data)
+    }
+
+    stop("GO ontology must be one of 'BP', 'MF', or 'CC'.", call. = FALSE)
+}
+
+.coalesce_term_name <- function(result_name, backend_name) {
+    ifelse(is.na(result_name) | result_name == "", backend_name, result_name)
+}
+
+.validate_directional <- function(directional) {
+    valid_directions <- c("both", "up", "down")
+
+    if (!directional %in% valid_directions) {
+        stop(
+            "directional must be one of 'both', 'up', or 'down'.",
+            call. = FALSE
+        )
+    }
+}
+
+.validate_level_window <- function(level_top, level_bottom, available_levels) {
+    if (length(available_levels) == 0) {
+        stop(
+            "No hierarchy levels were available after mapping the GSEA result to the selected database.",
+            call. = FALSE
+        )
+    }
+
+    if (is.null(level_bottom)) {
+        level_bottom <- max(available_levels, na.rm = TRUE)
+    }
+
+    if (level_top < min(available_levels, na.rm = TRUE)) {
+        stop("level_top is above the available hierarchy range.", call. = FALSE)
+    }
+
+    if (level_bottom > max(available_levels, na.rm = TRUE)) {
+        stop("level_bottom is deeper than the available hierarchy range.", call. = FALSE)
+    }
+
+    if (level_bottom < (level_top + 1)) {
+        stop(
+            "level_bottom must be at least level_top + 1.",
+            call. = FALSE
+        )
+    }
+
+    list(level_top = level_top, level_bottom = level_bottom)
+}
+
+.descendant_lookup_from_terms <- function(term_tbl) {
+    parent_column <- if ("canonical_parent_id" %in% names(term_tbl)) {
+        "canonical_parent_id"
+    } else {
+        "parent_id"
+    }
+
+    child_map <- split(term_tbl$term_id, term_tbl[[parent_column]])
+    child_map <- child_map[names(child_map) != "NA"]
+
+    descendants <- vector(mode = "list", length = nrow(term_tbl))
+    names(descendants) <- term_tbl$term_id
+
+    term_order <- term_tbl %>%
+        dplyr::arrange(dplyr::desc(.data$level), .data$term_id) %>%
+        dplyr::pull(.data$term_id)
+
+    for (term_id in term_order) {
+        child_ids <- child_map[[term_id]]
+
+        if (length(child_ids) == 0) {
+            descendants[[term_id]] <- term_id
+            next
+        }
+
+        descendant_ids <- term_id
+
+        for (child_id in child_ids) {
+            descendant_ids <- c(descendant_ids, descendants[[child_id]])
+        }
+
+        descendants[[term_id]] <- unique(descendant_ids)
+    }
+
+    descendants
+}
+
+.compute_branch_metrics <- function(result_tbl) {
+    descendants <- .descendant_lookup_from_terms(result_tbl)
+
+    branch_best_p <- rep(NA_real_, nrow(result_tbl))
+    branch_best_nes <- rep(NA_real_, nrow(result_tbl))
+
+    for (row_index in seq_len(nrow(result_tbl))) {
+        descendant_ids <- descendants[[result_tbl$term_id[[row_index]]]]
+        descendant_tbl <- result_tbl %>%
+            dplyr::filter(.data$term_id %in% descendant_ids)
+
+        branch_best_p[[row_index]] <- min(descendant_tbl$p_adjust_hier, na.rm = TRUE)
+        branch_best_nes[[row_index]] <- max(descendant_tbl$abs_NES, na.rm = TRUE)
+
+        if (is.infinite(branch_best_p[[row_index]])) {
+            branch_best_p[[row_index]] <- NA_real_
+        }
+
+        if (is.infinite(branch_best_nes[[row_index]])) {
+            branch_best_nes[[row_index]] <- NA_real_
+        }
+    }
+
+    result_tbl %>%
+        dplyr::mutate(
+            branch_best_p = branch_best_p,
+            branch_best_nes = branch_best_nes
+        )
+}
+
+.order_branch_terms <- function(result_tbl, level_top) {
+    child_map <- split(result_tbl$term_id, result_tbl$canonical_parent_id)
+    child_map <- child_map[names(child_map) != "NA"]
+
+    order_branch <- function(term_id, ordered_ids = character()) {
+        ordered_ids <- c(ordered_ids, term_id)
+
+        child_ids <- child_map[[term_id]]
+
+        if (length(child_ids) == 0) {
+            return(ordered_ids)
+        }
+
+        child_order <- result_tbl %>%
+            dplyr::filter(.data$term_id %in% child_ids) %>%
+            dplyr::arrange(.data$branch_best_p, dplyr::desc(.data$branch_best_nes), .data$Description) %>%
+            dplyr::pull(.data$term_id)
+
+        for (child_id in child_order) {
+            ordered_ids <- order_branch(term_id = child_id, ordered_ids = ordered_ids)
+        }
+
+        ordered_ids
+    }
+
+    root_ids <- result_tbl %>%
+        dplyr::filter(.data$level == level_top) %>%
+        dplyr::arrange(.data$branch_best_p, dplyr::desc(.data$branch_best_nes), .data$Description) %>%
+        dplyr::pull(.data$term_id)
+
+    ordered_ids <- character()
+
+    for (root_id in root_ids) {
+        ordered_ids <- order_branch(term_id = root_id, ordered_ids = ordered_ids)
+    }
+
+    ordered_ids
+}
+
+.build_plot_table <- function(result_tbl, level_top, level_bottom) {
+    plot_tbl <- result_tbl %>%
+        dplyr::mutate(
+            row_order = seq_len(dplyr::n()),
+            plot_y = rev(seq_len(dplyr::n())),
+            tree_x = -(level_bottom - .data$level + 1),
+            label_x = 0,
+            dot_x = 1
+        )
+
+    edge_tbl <- plot_tbl %>%
+        dplyr::select(
+            child_id = term_id,
+            child_y = plot_y,
+            child_x = tree_x,
+            child_label = Description,
+            parent_id = canonical_parent_id
+        ) %>%
+        dplyr::filter(!is.na(.data$parent_id)) %>%
+        dplyr::left_join(
+            plot_tbl %>%
+                dplyr::select(parent_id = term_id, parent_y = plot_y, parent_x = tree_x),
+            by = "parent_id"
+        )
+
+    vertical_tbl <- edge_tbl %>%
+        dplyr::group_by(.data$parent_id, .data$parent_x, .data$parent_y) %>%
+        dplyr::summarise(
+            child_y_min = min(.data$child_y),
+            child_y_max = max(.data$child_y),
+            .groups = "drop"
+        ) %>%
+        dplyr::mutate(
+            y_start = pmin(.data$parent_y, .data$child_y_min),
+            y_end = pmax(.data$parent_y, .data$child_y_max)
+        )
+
+    list(
+        nodes = plot_tbl,
+        edges = edge_tbl,
+        verticals = vertical_tbl
+    )
+}

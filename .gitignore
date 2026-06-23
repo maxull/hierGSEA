@@ -1,0 +1,9 @@
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+.quarto/
+docs/
+local_preprint/
+hierGSEA_example_output/
+hierGSEA_hirc_proteomics_output/

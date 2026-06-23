@@ -1,0 +1,26 @@
+{
+    "id": "238A306F",
+    "path": "~/Documents/GitHub/Hierarchical GSEA/inst/scripts/run_single_fiber_bulk_example.R",
+    "project_path": "inst/scripts/run_single_fiber_bulk_example.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": true,
+    "created": 1782219633550.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "314,0",
+        "scrollLine": "277"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1782220268,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1782220856535,
+    "read_only": false,
+    "read_only_alternatives": []
+}

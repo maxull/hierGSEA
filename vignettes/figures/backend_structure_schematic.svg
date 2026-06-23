@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="560" viewBox="0 0 1100 560">
+  <rect width="1100" height="560" fill="white"/>
+  <text x="50" y="55" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#222222">Backend hierarchy structure</text>
+  <text x="50" y="92" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#444444">All available edges are kept, but one canonical parent is chosen for stable plotting and family assignment.</text>
+
+  <rect x="85" y="180" width="230" height="60" rx="10" fill="#D7F0E3" stroke="#4A6B57" stroke-width="2"/>
+  <text x="132" y="217" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">Parent 1</text>
+
+  <rect x="85" y="320" width="230" height="60" rx="10" fill="#D7F0E3" stroke="#4A6B57" stroke-width="2"/>
+  <text x="132" y="357" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">Parent 2</text>
+
+  <rect x="500" y="250" width="270" height="70" rx="12" fill="#F6E4C9" stroke="#8A6A38" stroke-width="2"/>
+  <text x="545" y="293" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#1F2A21">Shared child term</text>
+
+  <line x1="315" y1="210" x2="500" y2="285" stroke="#444444" stroke-width="4"/>
+  <line x1="315" y1="350" x2="500" y2="285" stroke="#444444" stroke-width="4" stroke-dasharray="10,8"/>
+
+  <text x="790" y="235" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">solid line = canonical plotting parent</text>
+  <text x="790" y="275" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">dashed line = retained non-canonical edge</text>
+
+  <rect x="760" y="315" width="280" height="125" rx="12" fill="#F8F8F8" stroke="#CFCFCF" stroke-width="1.5"/>
+  <text x="785" y="352" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#1F2A21">Canonical parent choice</text>
+  <text x="785" y="387" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">1. shortest root path</text>
+  <text x="785" y="416" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">2. smallest parent level</text>
+  <text x="785" y="445" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">3. ascending parent ID</text>
+</svg>

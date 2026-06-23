@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+  <rect width="1100" height="620" fill="white"/>
+  <text x="50" y="55" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#222222">`hier_gsea_result` structure</text>
+  <text x="50" y="92" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#444444">The output object keeps statistical results, hierarchy metadata, plotting coordinates, and provenance together.</text>
+
+  <rect x="410" y="130" width="280" height="70" rx="12" fill="#E8F0FB" stroke="#6783A0" stroke-width="2"/>
+  <text x="455" y="173" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#1F2A21">hier_gsea_result</text>
+
+  <rect x="65" y="275" width="260" height="90" rx="12" fill="#F6E4C9" stroke="#8A6A38" stroke-width="2"/>
+  <text x="100" y="320" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">result_raw</text>
+  <text x="100" y="350" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">original gseaResult</text>
+
+  <rect x="365" y="255" width="370" height="130" rx="12" fill="#DCEEFF" stroke="#47637B" stroke-width="2"/>
+  <text x="400" y="300" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">results_tbl</text>
+  <text x="400" y="332" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">hierarchy-aware adjusted p-values</text>
+  <text x="400" y="360" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">branch retention and ordering</text>
+
+  <rect x="785" y="275" width="255" height="90" rx="12" fill="#F0F4E7" stroke="#748861" stroke-width="2"/>
+  <text x="825" y="320" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">meta</text>
+  <text x="825" y="350" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">settings and provenance</text>
+
+  <rect x="140" y="455" width="235" height="90" rx="12" fill="#F8F8F8" stroke="#CCCCCC" stroke-width="1.5"/>
+  <text x="175" y="500" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">hierarchy_tbl</text>
+  <text x="175" y="530" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">all backend edges</text>
+
+  <rect x="435" y="455" width="235" height="90" rx="12" fill="#F8F8F8" stroke="#CCCCCC" stroke-width="1.5"/>
+  <text x="490" y="500" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">paths_tbl</text>
+  <text x="490" y="530" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">canonical paths</text>
+
+  <rect x="730" y="435" width="275" height="130" rx="12" fill="#F8F8F8" stroke="#CCCCCC" stroke-width="1.5"/>
+  <text x="790" y="478" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1F2A21">plot_tbl</text>
+  <text x="790" y="510" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">nodes</text>
+  <text x="790" y="536" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">edges</text>
+  <text x="790" y="562" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">verticals</text>
+
+  <line x1="550" y1="200" x2="195" y2="275" stroke="#555555" stroke-width="3.5"/>
+  <line x1="550" y1="200" x2="550" y2="255" stroke="#555555" stroke-width="3.5"/>
+  <line x1="550" y1="200" x2="915" y2="275" stroke="#555555" stroke-width="3.5"/>
+  <line x1="550" y1="385" x2="257" y2="455" stroke="#999999" stroke-width="2.5"/>
+  <line x1="550" y1="385" x2="552" y2="455" stroke="#999999" stroke-width="2.5"/>
+  <line x1="550" y1="385" x2="867" y2="435" stroke="#999999" stroke-width="2.5"/>
+</svg>

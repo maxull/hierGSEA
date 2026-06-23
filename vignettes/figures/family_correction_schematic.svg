@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580">
+  <rect width="1100" height="580" fill="white"/>
+  <text x="50" y="55" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#222222">Level-specific BH correction</text>
+  <text x="50" y="92" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#444444">Families are defined within the visible hierarchy window rather than across the full ontology as one flat list.</text>
+
+  <rect x="70" y="150" width="960" height="100" rx="12" fill="#EEF8F1" stroke="#6C8B73" stroke-width="2"/>
+  <text x="95" y="190" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1E2A22">Family at level_top</text>
+  <text x="95" y="226" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">All visible starting-level terms are corrected together using BH.</text>
+
+  <rect x="70" y="295" width="430" height="170" rx="12" fill="#F3F7FC" stroke="#6B8197" stroke-width="2"/>
+  <text x="95" y="335" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1E2A22">Child family under parent A</text>
+  <text x="95" y="372" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">Sibling A1</text>
+  <text x="95" y="405" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">Sibling A2</text>
+  <text x="95" y="438" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">Sibling A3</text>
+
+  <rect x="600" y="295" width="430" height="170" rx="12" fill="#FCF4E7" stroke="#9A845A" stroke-width="2"/>
+  <text x="625" y="335" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#1E2A22">Child family under parent B</text>
+  <text x="625" y="372" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">Sibling B1</text>
+  <text x="625" y="405" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">Sibling B2</text>
+  <text x="625" y="438" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">Sibling B3</text>
+
+  <line x1="550" y1="250" x2="550" y2="500" stroke="#D5D5D5" stroke-width="2" stroke-dasharray="8,8"/>
+
+  <text x="70" y="530" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#444444">Interpretation: unrelated branches do not automatically penalize one another once the analyst has chosen a visible hierarchy window.</text>
+</svg>

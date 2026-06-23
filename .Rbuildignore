@@ -1,0 +1,5 @@
+^data-raw$
+^README\.Rmd$
+^\.Rproj\.user$
+^.*\.Rproj$
+^local_preprint$

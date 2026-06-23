@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520">
+  <rect width="1100" height="520" fill="white"/>
+  <text x="50" y="55" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#222222">Hierarchy-aware tree layout</text>
+  <text x="50" y="90" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#444444">The left strip is a curated parent-child pathway tree, not hierarchical clustering.</text>
+
+  <rect x="55" y="135" width="185" height="55" rx="10" fill="#D7F0E3" stroke="#4A6B57" stroke-width="2"/>
+  <text x="78" y="169" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#1F2A21">Level 1 root</text>
+
+  <rect x="330" y="210" width="235" height="55" rx="10" fill="#DCEEFF" stroke="#47637B" stroke-width="2"/>
+  <text x="352" y="244" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#1F2A21">Level 2 child A</text>
+
+  <rect x="330" y="315" width="235" height="55" rx="10" fill="#DCEEFF" stroke="#47637B" stroke-width="2"/>
+  <text x="352" y="349" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#1F2A21">Level 2 child B</text>
+
+  <rect x="685" y="175" width="280" height="55" rx="10" fill="#F6E4C9" stroke="#8A6A38" stroke-width="2"/>
+  <text x="705" y="209" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#1F2A21">Level 3 grandchild A1</text>
+
+  <rect x="685" y="250" width="280" height="55" rx="10" fill="#F6E4C9" stroke="#8A6A38" stroke-width="2"/>
+  <text x="705" y="284" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#1F2A21">Level 3 grandchild A2</text>
+
+  <rect x="685" y="350" width="280" height="55" rx="10" fill="#F6E4C9" stroke="#8A6A38" stroke-width="2"/>
+  <text x="705" y="384" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#1F2A21">Level 3 grandchild B1</text>
+
+  <line x1="240" y1="162" x2="330" y2="237" stroke="#444444" stroke-width="4"/>
+  <line x1="240" y1="162" x2="330" y2="342" stroke="#444444" stroke-width="4"/>
+  <line x1="565" y1="237" x2="685" y2="202" stroke="#444444" stroke-width="4"/>
+  <line x1="565" y1="237" x2="685" y2="277" stroke="#444444" stroke-width="4"/>
+  <line x1="565" y1="342" x2="685" y2="377" stroke="#444444" stroke-width="4"/>
+
+  <rect x="55" y="430" width="985" height="55" rx="10" fill="#F8F8F8" stroke="#CCCCCC" stroke-width="1.5"/>
+  <text x="78" y="464" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#333333">If grandchild A2 is significant, hierGSEA keeps its non-significant ancestors so the branch remains interpretable in the plot.</text>
+</svg>

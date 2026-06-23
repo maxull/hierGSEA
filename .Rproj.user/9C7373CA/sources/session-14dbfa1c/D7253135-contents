@@ -1,0 +1,411 @@
+suppressPackageStartupMessages({
+    library(AnnotationDbi)
+    library(clusterProfiler)
+    library(org.Hs.eg.db)
+    library(readr)
+    library(ReactomePA)
+})
+
+################################################################################################################################################
+######################################################      LOAD hierGSEA LOCALLY OR FROM AN INSTALL      ######################################
+################################################################################################################################################
+
+# This script is a second worked example that uses real proteomics differential
+# expression output from the HIRC project. The overall structure mirrors the
+# bundled single-fiber example, but here we intentionally read the external
+# project files directly so the script can be used as a realistic stress test
+# on a second dataset.
+
+get_script_path <- function() {
+    script_path_env <- Sys.getenv("HIERGSEA_SCRIPT_PATH", unset = "")
+
+    if (nzchar(script_path_env) && file.exists(script_path_env)) {
+        return(normalizePath(script_path_env, winslash = "/"))
+    }
+
+    argument_matches <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+
+    if (length(argument_matches) > 0) {
+        return(normalizePath(sub("^--file=", "", argument_matches[[1]]), winslash = "/"))
+    }
+
+    if (!is.null(sys.frames()[[1]]$ofile)) {
+        return(normalizePath(sys.frames()[[1]]$ofile, winslash = "/"))
+    }
+
+    source_guess <- file.path(getwd(), "inst", "scripts", "run_hirc_proteomics_example.R")
+
+    if (file.exists(source_guess)) {
+        return(normalizePath(source_guess, winslash = "/"))
+    }
+
+    stop("Could not determine the script path for the HIRC proteomics workflow.", call. = FALSE)
+}
+
+load_hiergsea_package <- function() {
+    if (requireNamespace("hierGSEA", quietly = TRUE)) {
+        library(hierGSEA)
+        return(invisible(TRUE))
+    }
+
+    script_path <- get_script_path()
+    package_root <- normalizePath(file.path(dirname(script_path), "..", ".."), winslash = "/")
+
+    if (!requireNamespace("pkgload", quietly = TRUE)) {
+        stop(
+            "pkgload is required to run the HIRC proteomics example from the source repository when hierGSEA is not installed.",
+            call. = FALSE
+        )
+    }
+
+    pkgload::load_all(package_root, quiet = TRUE, export_all = FALSE)
+    invisible(TRUE)
+}
+
+load_hiergsea_package()
+
+################################################################################################################################################
+######################################################      DEFINE INPUT PATHS AND OUTPUT LOCATION      ########################################
+################################################################################################################################################
+
+# This example is designed around the local HIRC proteomics repository. We keep
+# the input path explicit so the script is easy to adapt if the project is
+# moved or if another analyst wants to point the workflow to a different set of
+# limma-style proteomics contrasts.
+
+hirc_de_results_dir <- "/Users/maxullrich/Documents/GitHub/HIRC_proteomics/data/DE_results/with_fibertype"
+
+if (!dir.exists(hirc_de_results_dir)) {
+    stop(
+        paste0(
+            "The expected HIRC DE results directory was not found: ",
+            hirc_de_results_dir
+        ),
+        call. = FALSE
+    )
+}
+
+example_output_dir <- file.path(getwd(), "hierGSEA_hirc_proteomics_output")
+dir.create(example_output_dir, showWarnings = FALSE, recursive = TRUE)
+
+################################################################################################################################################
+######################################################      LOAD HIRC PROTEOMICS DIFFERENTIAL RESULTS      ####################################
+################################################################################################################################################
+
+# We focus this example on the two exercise-response contrasts that are easiest
+# to interpret biologically in the placebo and antihistamine arms. The limma
+# tables already contain the ranked statistics we need for GSEA, so the main
+# preparatory work is to standardise the protein/gene symbol column.
+
+hirc_rt_placebo <- readr::read_csv(
+    file.path(hirc_de_results_dir, "DE_RT_PLA.csv"),
+    show_col_types = FALSE
+)
+
+hirc_rt_antihistamine <- readr::read_csv(
+    file.path(hirc_de_results_dir, "DE_RT_AH.csv"),
+    show_col_types = FALSE
+)
+
+################################################################################################################################################
+######################################################      STANDARDISE THE PROTEIN IDENTIFIER COLUMN      #####################################
+################################################################################################################################################
+
+# The HIRC DE tables store gene-like protein symbols in the first unnamed
+# column. We rename that field explicitly so the downstream joins and comments
+# stay readable. Keeping this standardisation step near the top of the script
+# also makes it easier to swap in another DE table later.
+
+standardise_hirc_de_table <- function(de_tbl) {
+    first_column_name <- names(de_tbl)[[1]]
+
+    de_tbl %>%
+        dplyr::rename(gene_symbol = !!rlang::sym(first_column_name)) %>%
+        dplyr::filter(!is.na(.data$gene_symbol), .data$gene_symbol != "")
+}
+
+hirc_rt_placebo <- standardise_hirc_de_table(hirc_rt_placebo)
+hirc_rt_antihistamine <- standardise_hirc_de_table(hirc_rt_antihistamine)
+
+################################################################################################################################################
+######################################################      CONVERT PROTEIN SYMBOLS TO ENTREZ IDS      #########################################
+################################################################################################################################################
+
+# Reactome and GO GSEA still expect gene-centric identifiers. For proteomics,
+# the practical compromise is to map the reported protein symbols to Entrez IDs
+# and then rank by the limma logFC estimate. We keep the helper local to this
+# script because the package API is intentionally focused on post-processing the
+# enrichment results rather than on identifier management.
+
+convert_hirc_symbols_to_entrez <- function(de_tbl) {
+    id_lookup <- AnnotationDbi::select(
+        org.Hs.eg.db,
+        keys = de_tbl$gene_symbol,
+        keytype = "SYMBOL",
+        columns = c("SYMBOL", "ENTREZID")
+    ) %>%
+        tibble::as_tibble() %>%
+        dplyr::filter(!is.na(.data$ENTREZID))
+
+    de_tbl %>%
+        dplyr::inner_join(id_lookup, by = c("gene_symbol" = "SYMBOL")) %>%
+        dplyr::mutate(abs_logFC = abs(.data$logFC)) %>%
+        dplyr::arrange(dplyr::desc(.data$abs_logFC), .data$ENTREZID) %>%
+        dplyr::distinct(.data$ENTREZID, .keep_all = TRUE) %>%
+        dplyr::select(-abs_logFC)
+}
+
+hirc_rt_placebo_entrez <- convert_hirc_symbols_to_entrez(hirc_rt_placebo)
+hirc_rt_antihistamine_entrez <- convert_hirc_symbols_to_entrez(hirc_rt_antihistamine)
+
+################################################################################################################################################
+######################################################      BUILD LOGFC-RANKED VECTORS      #####################################################
+################################################################################################################################################
+
+# We rank by limma logFC here because that gives a direct and intuitive
+# direction of change for the exercise effect in each treatment arm. The
+# vectors are sorted decreasingly so the positive end of the distribution sits
+# at the top, while negative enrichment is still fully available to the GSEA
+# statistic.
+
+hirc_rt_placebo_ranked_vector <- hirc_rt_placebo_entrez$logFC
+names(hirc_rt_placebo_ranked_vector) <- hirc_rt_placebo_entrez$ENTREZID
+hirc_rt_placebo_ranked_vector <- sort(hirc_rt_placebo_ranked_vector, decreasing = TRUE)
+
+hirc_rt_antihistamine_ranked_vector <- hirc_rt_antihistamine_entrez$logFC
+names(hirc_rt_antihistamine_ranked_vector) <- hirc_rt_antihistamine_entrez$ENTREZID
+hirc_rt_antihistamine_ranked_vector <- sort(hirc_rt_antihistamine_ranked_vector, decreasing = TRUE)
+
+################################################################################################################################################
+######################################################      RUN REACTOME AND GO GSEA FOR BOTH CONTRASTS      ###################################
+################################################################################################################################################
+
+# We deliberately keep the upstream GSEA settings permissive so broad parent
+# pathways survive into the hierarchy-aware post-processing stage. The package
+# is meant to own the hierarchical filtering and branch-aware multiple-testing
+# correction afterwards, so the source GSEA object should preserve as much of
+# the tested term universe as practical.
+
+hirc_reactome_rt_placebo <- ReactomePA::gsePathway(
+    geneList = hirc_rt_placebo_ranked_vector,
+    organism = "human",
+    minGSSize = 5,
+    maxGSSize = 10000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "none",
+    verbose = FALSE
+)
+
+hirc_go_bp_rt_placebo <- clusterProfiler::gseGO(
+    geneList = hirc_rt_placebo_ranked_vector,
+    OrgDb = org.Hs.eg.db,
+    keyType = "ENTREZID",
+    ont = "BP",
+    minGSSize = 5,
+    maxGSSize = 10000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "none",
+    verbose = FALSE
+)
+
+hirc_reactome_rt_antihistamine <- ReactomePA::gsePathway(
+    geneList = hirc_rt_antihistamine_ranked_vector,
+    organism = "human",
+    minGSSize = 5,
+    maxGSSize = 10000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "none",
+    verbose = FALSE
+)
+
+hirc_go_bp_rt_antihistamine <- clusterProfiler::gseGO(
+    geneList = hirc_rt_antihistamine_ranked_vector,
+    OrgDb = org.Hs.eg.db,
+    keyType = "ENTREZID",
+    ont = "BP",
+    minGSSize = 5,
+    maxGSSize = 10000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "none",
+    verbose = FALSE
+)
+
+################################################################################################################################################
+######################################################      APPLY HIERARCHY-AWARE POST-PROCESSING      ########################################
+################################################################################################################################################
+
+# For this second example, we keep the settings fairly close to the package
+# defaults so the script is useful as a general debugging template. The
+# placebo and antihistamine arms are processed separately, which makes it easy
+# to compare how the same biological hierarchy behaves across the two exercise
+# contexts.
+
+hirc_reactome_rt_placebo_hier <- hierGSEA::hier_gsea(
+    result = hirc_reactome_rt_placebo,
+    db = "reactome",
+    directional = "both",
+    level_top = 1,
+    level_bottom = 4,
+    alpha = 0.05
+)
+
+hirc_go_bp_rt_placebo_hier <- hierGSEA::hier_gsea(
+    result = hirc_go_bp_rt_placebo,
+    db = "go",
+    ontology = "BP",
+    directional = "both",
+    level_top = 1,
+    level_bottom = 4,
+    alpha = 0.05
+)
+
+hirc_reactome_rt_antihistamine_hier <- hierGSEA::hier_gsea(
+    result = hirc_reactome_rt_antihistamine,
+    db = "reactome",
+    directional = "both",
+    level_top = 1,
+    level_bottom = 4,
+    alpha = 0.05
+)
+
+hirc_go_bp_rt_antihistamine_hier <- hierGSEA::hier_gsea(
+    result = hirc_go_bp_rt_antihistamine,
+    db = "go",
+    ontology = "BP",
+    directional = "both",
+    level_top = 1,
+    level_bottom = 4,
+    alpha = 0.05
+)
+
+################################################################################################################################################
+######################################################      PLOT REACTOME PLACEBO EXERCISE RESPONSE      ######################################
+################################################################################################################################################
+
+# The Reactome placebo plot is a good first diagnostic because it usually gives
+# a manageable branch structure while still testing whether the proteomics
+# mapping is producing a biologically coherent hierarchy.
+
+hirc_reactome_rt_placebo_plot <- hierGSEA::plot_hier_gsea(
+    x = hirc_reactome_rt_placebo_hier,
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.40,
+    top_n_parents = 3
+)
+
+ggplot2::ggsave(
+    hirc_reactome_rt_placebo_plot,
+    filename = file.path(example_output_dir, "hirc_rt_placebo_reactome_hierarchy.pdf"),
+    width = 36,
+    height = 30,
+    units = "cm"
+)
+
+################################################################################################################################################
+######################################################      PLOT GO BP PLACEBO EXERCISE RESPONSE      ##########################################
+################################################################################################################################################
+
+# GO biological process is much denser than Reactome, so this plot is useful as
+# a second-stage stress test once the Reactome output looks sensible.
+
+hirc_go_bp_rt_placebo_plot <- hierGSEA::plot_hier_gsea(
+    x = hirc_go_bp_rt_placebo_hier,
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.36, 
+    top_n_parents = 2
+)
+
+ggplot2::ggsave(
+    hirc_go_bp_rt_placebo_plot,
+    filename = file.path(example_output_dir, "hirc_rt_placebo_go_bp_hierarchy.pdf"),
+    width = 36,
+    height = 34,
+    units = "cm"
+)
+
+################################################################################################################################################
+######################################################      PLOT REACTOME ANTIHISTAMINE EXERCISE RESPONSE      ################################
+################################################################################################################################################
+
+# Running the same figure logic on the antihistamine arm is helpful because it
+# checks that the hierarchy code is not overfit to a single biological ranking
+# structure or one treatment condition.
+
+hirc_reactome_rt_antihistamine_plot <- hierGSEA::plot_hier_gsea(
+    x = hirc_reactome_rt_antihistamine_hier,
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.40
+)
+
+ggplot2::ggsave(
+    hirc_reactome_rt_antihistamine_plot,
+    filename = file.path(example_output_dir, "hirc_rt_antihistamine_reactome_hierarchy.pdf"),
+    width = 36,
+    height = 30,
+    units = "cm"
+)
+
+################################################################################################################################################
+######################################################      PLOT GO BP ANTIHISTAMINE EXERCISE RESPONSE      ####################################
+################################################################################################################################################
+
+# The final GO plot completes the second dataset workflow. At this point the
+# output folder contains matched Reactome and GO hierarchy results for both
+# treatment arms, which makes the script a useful debugging harness when the
+# package is changed later.
+
+hirc_go_bp_rt_antihistamine_plot <- hierGSEA::plot_hier_gsea(
+    x = hirc_go_bp_rt_antihistamine_hier,
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.36
+)
+
+ggplot2::ggsave(
+    hirc_go_bp_rt_antihistamine_plot,
+    filename = file.path(example_output_dir, "hirc_rt_antihistamine_go_bp_hierarchy.pdf"),
+    width = 36,
+    height = 34,
+    units = "cm"
+)
+
+################################################################################################################################################
+######################################################      SAVE TABLES FOR QUICK INSPECTION      ################################################
+################################################################################################################################################
+
+# Writing the processed tables makes it much easier to debug branch retention,
+# hierarchy-aware p-value adjustment, and the final term ordering without
+# having to rerun the plotting code interactively every time.
+
+readr::write_csv(
+    hirc_reactome_rt_placebo_hier$results_tbl,
+    file.path(example_output_dir, "hirc_rt_placebo_reactome_hierarchy_results.csv")
+)
+
+readr::write_csv(
+    hirc_go_bp_rt_placebo_hier$results_tbl,
+    file.path(example_output_dir, "hirc_rt_placebo_go_bp_hierarchy_results.csv")
+)
+
+readr::write_csv(
+    hirc_reactome_rt_antihistamine_hier$results_tbl,
+    file.path(example_output_dir, "hirc_rt_antihistamine_reactome_hierarchy_results.csv")
+)
+
+readr::write_csv(
+    hirc_go_bp_rt_antihistamine_hier$results_tbl,
+    file.path(example_output_dir, "hirc_rt_antihistamine_go_bp_hierarchy_results.csv")
+)
+
+message("hierGSEA HIRC proteomics example completed. Output files were written to: ", example_output_dir)

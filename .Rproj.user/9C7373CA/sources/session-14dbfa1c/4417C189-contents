@@ -1,0 +1,183 @@
+---
+title: "Getting started with hierGSEA"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with hierGSEA}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Overview
+
+`hierGSEA` is designed for the stage *after* you already have a GSEA
+result from `ReactomePA`, `clusterProfiler::gseGO()`, or
+`clusterProfiler::GSEA()` with a hierarchical custom database such as
+MitoCarta MitoPathways.
+
+The package does **not** rerun enrichment or replace `clusterProfiler`.
+Instead, it does four things on top of the upstream `gseaResult`:
+
+1.  maps tested terms onto a curated hierarchy backend
+2.  recalculates adjusted p-values within visible hierarchy families
+3.  retains significant branches together with the ancestors needed to
+    show them
+4.  produces a hierarchy-aware dot plot with a left-side tree strip
+
+## Recommended upstream settings
+
+Large parent pathways are often removed before hierarchy-aware
+processing ever starts. To avoid that, use permissive upstream GSEA
+settings whenever possible:
+
+- `minGSSize = 5`
+- `maxGSSize = 10000`
+- `pvalueCutoff = 1`
+- `pAdjustMethod = "none"`
+
+`hierGSEA` recomputes the hierarchy-aware adjusted p-values from the raw
+`pvalue` column, so the incoming global `p.adjust` column is preserved
+only for reference.
+
+# Supported backends
+
+The current package supports:
+
+- Reactome
+- GO, handled separately as `BP`, `MF`, or `CC`
+- MitoCarta via the Broad `MitoPathways3.0` hierarchy and custom
+  `clusterProfiler::GSEA()` mappings
+
+For GO, the artificial container nodes such as `all`,
+`biological_process`, `molecular_function`, and `cellular_component` are
+removed from the visible/testing hierarchy. That means level 1 in
+`hierGSEA` starts at real biological branches rather than ontology
+headers.
+
+# Standard workflow
+
+## Step 1: run GSEA upstream
+
+```{r}
+library(ReactomePA)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+reactome_res <- ReactomePA::gsePathway(
+  geneList = ranked_vector,
+  organism = "human",
+  minGSSize = 5,
+  maxGSSize = 10000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "none",
+  verbose = FALSE
+)
+
+go_bp_res <- clusterProfiler::gseGO(
+  geneList = ranked_vector,
+  OrgDb = org.Hs.eg.db,
+  keyType = "ENTREZID",
+  ont = "BP",
+  minGSSize = 5,
+  maxGSSize = 10000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "none",
+  verbose = FALSE
+)
+```
+
+## Step 2: process the hierarchy-aware view
+
+```{r}
+library(hierGSEA)
+
+reactome_hier <- hier_gsea(
+  result = reactome_res,
+  db = "reactome",
+  directional = "both",
+  level_top = 1,
+  level_bottom = 5,
+  alpha = 0.05
+)
+
+go_bp_hier <- hier_gsea(
+  result = go_bp_res,
+  db = "go",
+  ontology = "BP",
+  directional = "up",
+  level_top = 1,
+  level_bottom = 5,
+  alpha = 0.05
+)
+```
+
+## Step 3: make the plot
+
+```{r}
+reactome_plot <- plot_hier_gsea(
+  x = reactome_hier,
+  tree_width = 0.40,
+  top_n_parents = 6,
+  significance_cutoff = 0.05
+)
+```
+
+If `directional = "both"` was used in `hier_gsea()`, the plot keeps the
+sign of the enrichment by separating points into `Down` and `Up`
+columns. The point size defaults to `|NES|`, while the point fill
+encodes the hierarchy-aware adjusted p-value.
+
+# MitoCarta workflow
+
+For MitoCarta, enrichment itself still comes from
+`clusterProfiler::GSEA()`. `hierGSEA` supplies the hierarchy backend and
+the custom TERM2GENE/TERM2NAME mappings:
+
+```{r}
+mitocarta_res <- clusterProfiler::GSEA(
+  geneList = symbol_ranked_vector,
+  TERM2GENE = hierGSEA::mitocarta_term2gene(),
+  TERM2NAME = hierGSEA::mitocarta_term2name(),
+  minGSSize = 5,
+  maxGSSize = 10000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "none",
+  verbose = FALSE
+)
+
+mitocarta_hier <- hier_gsea(
+  result = mitocarta_res,
+  db = "mitocarta",
+  directional = "both",
+  level_top = 1,
+  level_bottom = 3,
+  alpha = 0.05
+)
+```
+
+At the moment, the bundled MitoCarta backend exposes 3 visible hierarchy
+levels.
+
+# Visual summary
+
+The hierarchy-aware plot is not a dendrogram or clustering result. It is
+a database-driven parent-child tree that preserves known ontology
+structure.
+
+![](figures/hierarchy_tree_schematic.svg)
+
+# What to read next
+
+- `vignette("methods-and-statistical-rationale", package = "hierGSEA")`
+- `vignette("output-object-reference", package = "hierGSEA")`
+- `?hier_gsea_result`
