@@ -17,6 +17,8 @@ Description: Post-processes Gene Set Enrichment Analysis (GSEA) results
     hierarchy plotting without re-implementing the underlying enrichment
     methods.
 License: MIT + file LICENSE
+URL: https://maxull.github.io/hierGSEA/, https://github.com/maxull/hierGSEA
+BugReports: https://github.com/maxull/hierGSEA/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
