@@ -241,8 +241,8 @@ reactome_post_hier <- hierGSEA::hier_gsea(
     result = reactome_post_vs_pre,
     db = "reactome",
     directional = "both",
-    level_top = 1,
-    level_bottom = 10,
+    level_top = 2,
+    level_bottom = 5,
     alpha = 0.05
 )
 
@@ -300,13 +300,13 @@ reactome_post_plot <- hierGSEA::plot_hier_gsea(
     colour_col = "p_adjust_hier",
     show_left_hierarchy = TRUE,
     tree_width = 0.4,
-    #top_n_parents = 23
-    parent_terms = c("Immune System", "DNA Repair")
+    top_n_parents = 5
+    #parent_terms = c("Immune System", "DNA Repair")
 )
 
 ggplot2::ggsave(
     reactome_post_plot,
-    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy.pdf"),
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy_top_5.pdf"),
     width = 20,
     height = 45,
     units = "cm"
