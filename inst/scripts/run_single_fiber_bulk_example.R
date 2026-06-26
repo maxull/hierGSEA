@@ -241,6 +241,15 @@ reactome_post_hier <- hierGSEA::hier_gsea(
     result = reactome_post_vs_pre,
     db = "reactome",
     directional = "both",
+    level_top = 1,
+    level_bottom = 5,
+    alpha = 0.05
+)
+
+reactome_post_hier_level_2_to_5 <- hierGSEA::hier_gsea(
+    result = reactome_post_vs_pre,
+    db = "reactome",
+    directional = "both",
     level_top = 2,
     level_bottom = 5,
     alpha = 0.05
@@ -300,13 +309,57 @@ reactome_post_plot <- hierGSEA::plot_hier_gsea(
     colour_col = "p_adjust_hier",
     show_left_hierarchy = TRUE,
     tree_width = 0.4,
-    top_n_parents = 5
-    #parent_terms = c("Immune System", "DNA Repair")
+    top_n_parents = 3
 )
 
 ggplot2::ggsave(
     reactome_post_plot,
-    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy_top_5.pdf"),
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy.pdf"),
+    width = 36,
+    height = 30,
+    units = "cm"
+)
+
+################################################################################################################################################
+######################################################      SAVE OPTIONAL FOCUSED REACTOME EXAMPLE VIEWS      #################################
+################################################################################################################################################
+
+# These additional saved views are helpful for documentation because they show
+# two common ways analysts reduce crowding:
+# 1. keep only the top two starting branches
+# 2. start the visible window deeper in the hierarchy
+
+reactome_post_plot_top_2 <- hierGSEA::plot_hier_gsea(
+    x = reactome_post_hier,
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.4,
+    top_n_parents = 2
+)
+
+ggplot2::ggsave(
+    reactome_post_plot_top_2,
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy_top_2.pdf"),
+    width = 36,
+    height = 30,
+    units = "cm"
+)
+
+reactome_post_plot_level_2_to_5 <- hierGSEA::plot_hier_gsea(
+    x = reactome_post_hier_level_2_to_5,
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.4,
+    top_n_parents = 5
+)
+
+ggplot2::ggsave(
+    reactome_post_plot_level_2_to_5,
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy_level_2_to_5.pdf"),
     width = 20,
     height = 45,
     units = "cm"
