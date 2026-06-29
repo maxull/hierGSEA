@@ -172,16 +172,20 @@ adjusted p-value.
 If you already processed several contrasts with the same backend and ontology,
 you can pass them as a named list into `plot_hier_gsea()`. The plotting method
 will build one shared hierarchy on the y axis and then lay each result out in
-its own x-axis facet using the input-list order.
+its own x-axis facet using the input-list order. The example below mirrors the
+real four-result MetaMex workflow provided in
+`inst/scripts/run_metamex_multi_result_example.R`.
 
 ```{r}
 reactome_multi_plot <- plot_hier_gsea(
   x = list(
-    "POST vs PRE" = reactome_post_hier,
-    "REC vs PRE" = reactome_rec_hier
+    "Training Aerobic \nHealthy" = chronic_healthy_lean_aerobic_hier,
+    "Training Aerobic \nOverweight" = chronic_healthy_overweight_aerobic_hier,
+    "Training Resistance \nHealthy" = chronic_healthy_lean_resistance_hier,
+    "Training Resistance \nOverweight" = chronic_healthy_overweight_resistance_hier
   ),
   tree_width = 0.40,
-  top_n_parents = 3,
+  parent_terms = "Immune System",
   significance_cutoff = 0.05
 )
 ```
@@ -190,6 +194,8 @@ reactome_multi_plot <- plot_hier_gsea(
 
 This is usually the cleanest public-facing multi-result layout because you can
 compare several contrasts without redrawing the pathway tree for each panel.
+In this example, the branch selection is narrowed to `Immune System` so the
+shared biology remains readable across all four conditions.
 
 ## Step 5: control how many branches are shown
 

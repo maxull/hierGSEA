@@ -112,16 +112,20 @@ reactome_plot <- plot_hier_gsea(
 
 If you pass a named list of `hier_gsea_result` objects into
 `plot_hier_gsea()`, `hierGSEA` builds one shared y-axis tree and then places
-each result in its own x-axis facet in the order of the input list.
+each result in its own x-axis facet in the order of the input list. The
+example below matches the real multi-result workflow shown in
+`inst/scripts/run_metamex_multi_result_example.R`.
 
 ```r
 reactome_multi_plot <- plot_hier_gsea(
   x = list(
-    "POST vs PRE" = reactome_post_hier,
-    "REC vs PRE" = reactome_rec_hier
+    "Training Aerobic \nHealthy" = chronic_healthy_lean_aerobic_hier,
+    "Training Aerobic \nOverweight" = chronic_healthy_overweight_aerobic_hier,
+    "Training Resistance \nHealthy" = chronic_healthy_lean_resistance_hier,
+    "Training Resistance \nOverweight" = chronic_healthy_overweight_resistance_hier
   ),
   tree_width = 0.40,
-  top_n_parents = 3,
+  parent_terms = "Immune System",
   significance_cutoff = 0.05
 )
 ```
@@ -194,9 +198,10 @@ This repository includes:
 - `inst/scripts/build_pkgdown_site.R`
 
 The single-fiber and HIRC scripts are chronological end-to-end examples for
-testing and debugging. The bundled single-fiber script also includes the public
-shared-tree multi-result example used in the README and vignette, comparing
-`POST vs PRE` and `REC vs PRE` Reactome results on one shared hierarchy.
+testing and debugging. The MetaMex script contains the larger shared-tree
+multi-result example used in the README and vignette, while the single-fiber
+script remains the bundled reproducible example that works from package data
+alone.
 
 ## Documentation site
 
