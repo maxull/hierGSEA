@@ -106,6 +106,28 @@ reactome_plot <- plot_hier_gsea(
 )
 ```
 
+![](vignettes/figures/getting_started_example_reactome.png)
+
+## Shared-tree multi-result plotting
+
+If you pass a named list of `hier_gsea_result` objects into
+`plot_hier_gsea()`, `hierGSEA` builds one shared y-axis tree and then places
+each result in its own x-axis facet in the order of the input list.
+
+```r
+reactome_multi_plot <- plot_hier_gsea(
+  x = list(
+    "POST vs PRE" = reactome_post_hier,
+    "REC vs PRE" = reactome_rec_hier
+  ),
+  tree_width = 0.40,
+  top_n_parents = 3,
+  significance_cutoff = 0.05
+)
+```
+
+![](vignettes/figures/getting_started_example_reactome_multi.png)
+
 ## MitoCarta custom GSEA workflow
 
 For MitoCarta, enrichment still comes from `clusterProfiler::GSEA()`. The
@@ -168,10 +190,13 @@ This repository includes:
 
 - `inst/scripts/run_single_fiber_bulk_example.R`
 - `inst/scripts/run_hirc_proteomics_example.R`
+- `inst/scripts/run_metamex_multi_result_example.R`
 - `inst/scripts/build_pkgdown_site.R`
 
 The single-fiber and HIRC scripts are chronological end-to-end examples for
-testing and debugging.
+testing and debugging. The bundled single-fiber script also includes the public
+shared-tree multi-result example used in the README and vignette, comparing
+`POST vs PRE` and `REC vs PRE` Reactome results on one shared hierarchy.
 
 ## Documentation site
 

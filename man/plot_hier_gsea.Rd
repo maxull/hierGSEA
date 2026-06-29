@@ -17,7 +17,8 @@ plot_hier_gsea(
 )
 }
 \arguments{
-\item{x}{A \code{hier_gsea_result} object returned by \code{\link[=hier_gsea]{hier_gsea()}}.}
+\item{x}{A \code{hier_gsea_result} object returned by \code{\link[=hier_gsea]{hier_gsea()}}, or a
+non-empty list of compatible \code{hier_gsea_result} objects.}
 
 \item{label_col}{Label column to display beside the hierarchy.}
 
@@ -54,5 +55,8 @@ is a compact parent-child tree strip, while the right side shows a dot plot
 for enrichment strength and hierarchy-aware adjusted p-values. When the
 result was processed with \code{directional = "both"}, the plot separates negative
 and positive enrichment into \code{Down} and \code{Up} columns so the sign is retained
-visually without sacrificing the shared hierarchy layout.
+visually without sacrificing the shared hierarchy layout. The same function
+also accepts a list of compatible \code{hier_gsea_result} objects and will then
+draw one shared hierarchy with the comparison blocks arranged from left to
+right in the order of the list.
 }

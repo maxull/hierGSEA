@@ -149,10 +149,9 @@ convert_hirc_symbols_to_entrez <- function(de_tbl) {
 
     de_tbl %>%
         dplyr::inner_join(id_lookup, by = c("gene_symbol" = "SYMBOL")) %>%
-        dplyr::mutate(abs_logFC = abs(.data$logFC)) %>%
-        dplyr::arrange(dplyr::desc(.data$abs_logFC), .data$ENTREZID) %>%
+        dplyr::arrange(dplyr::desc(.data$logFC), .data$ENTREZID) %>%
         dplyr::distinct(.data$ENTREZID, .keep_all = TRUE) %>%
-        dplyr::select(-abs_logFC)
+        dplyr::arrange(dplyr::desc(.data$logFC), .data$ENTREZID)
 }
 
 hirc_rt_placebo_entrez <- convert_hirc_symbols_to_entrez(hirc_rt_placebo)

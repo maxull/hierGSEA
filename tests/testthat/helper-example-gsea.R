@@ -50,10 +50,9 @@ convert_example_symbols_to_entrez <- function(ranking_df) {
 
     ranking_df %>%
         dplyr::inner_join(id_lookup, by = c("gene" = "SYMBOL")) %>%
-        dplyr::mutate(abs_log2FoldChange = abs(.data$log2FoldChange)) %>%
-        dplyr::arrange(dplyr::desc(.data$abs_log2FoldChange), .data$ENTREZID) %>%
+        dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$ENTREZID) %>%
         dplyr::distinct(.data$ENTREZID, .keep_all = TRUE) %>%
-        dplyr::select(-abs_log2FoldChange)
+        dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$ENTREZID)
 }
 
 build_ranked_vector <- function(ranking_df) {
@@ -65,10 +64,9 @@ build_ranked_vector <- function(ranking_df) {
 
 build_symbol_ranked_vector <- function(ranking_df) {
     symbol_tbl <- ranking_df %>%
-        dplyr::mutate(abs_log2FoldChange = abs(.data$log2FoldChange)) %>%
-        dplyr::arrange(dplyr::desc(.data$abs_log2FoldChange), .data$gene) %>%
+        dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$gene) %>%
         dplyr::distinct(.data$gene, .keep_all = TRUE) %>%
-        dplyr::select(-abs_log2FoldChange)
+        dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$gene)
 
     ranked_vector <- symbol_tbl$log2FoldChange
     names(ranked_vector) <- symbol_tbl$gene

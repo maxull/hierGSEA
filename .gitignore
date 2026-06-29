@@ -7,3 +7,5 @@ docs/
 local_preprint/
 hierGSEA_example_output/
 hierGSEA_hirc_proteomics_output/
+.Rproj.user
+inst/scripts/run_crosys_multi_result_example.R

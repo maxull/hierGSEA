@@ -138,10 +138,9 @@ convert_symbols_to_entrez <- function(ranking_df) {
 
     ranking_df %>%
         dplyr::inner_join(id_lookup, by = c("gene" = "SYMBOL")) %>%
-        dplyr::mutate(abs_log2FoldChange = abs(.data$log2FoldChange)) %>%
-        dplyr::arrange(dplyr::desc(.data$abs_log2FoldChange), .data$ENTREZID) %>%
+        dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$ENTREZID) %>%
         dplyr::distinct(.data$ENTREZID, .keep_all = TRUE) %>%
-        dplyr::select(-abs_log2FoldChange)
+        dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$ENTREZID)
 }
 
 bulk_post_vs_pre_entrez <- convert_symbols_to_entrez(bulk_post_vs_pre)
@@ -152,10 +151,9 @@ bulk_rec_vs_pre_entrez <- convert_symbols_to_entrez(bulk_rec_vs_pre)
 # symbols here keeps the example close to the official MitoPathways resource.
 
 bulk_post_vs_pre_symbols <- bulk_post_vs_pre %>%
-    dplyr::mutate(abs_log2FoldChange = abs(.data$log2FoldChange)) %>%
-    dplyr::arrange(dplyr::desc(.data$abs_log2FoldChange), .data$gene) %>%
+    dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$gene) %>%
     dplyr::distinct(.data$gene, .keep_all = TRUE) %>%
-    dplyr::select(-abs_log2FoldChange)
+    dplyr::arrange(dplyr::desc(.data$log2FoldChange), .data$gene)
 
 ################################################################################################################################################
 ######################################################      BUILD LOG2FC-RANKED VECTORS      ####################################################
@@ -196,6 +194,16 @@ post_vs_pre_symbol_ranked_vector <- sort(post_vs_pre_symbol_ranked_vector, decre
 
 reactome_post_vs_pre <- ReactomePA::gsePathway(
     geneList = post_vs_pre_ranked_vector,
+    organism = "human",
+    maxGSSize = 10000,
+    minGSSize = 5,
+    pvalueCutoff = 1,
+    pAdjustMethod = "none",
+    verbose = FALSE
+)
+
+reactome_rec_vs_pre <- ReactomePA::gsePathway(
+    geneList = rec_vs_pre_ranked_vector,
     organism = "human",
     maxGSSize = 10000,
     minGSSize = 5,
@@ -251,6 +259,15 @@ reactome_post_hier_level_2_to_5 <- hierGSEA::hier_gsea(
     db = "reactome",
     directional = "both",
     level_top = 2,
+    level_bottom = 5,
+    alpha = 0.05
+)
+
+reactome_rec_hier <- hierGSEA::hier_gsea(
+    result = reactome_rec_vs_pre,
+    db = "reactome",
+    directional = "both",
+    level_top = 1,
     level_bottom = 5,
     alpha = 0.05
 )
@@ -318,6 +335,55 @@ ggplot2::ggsave(
     width = 36,
     height = 30,
     units = "cm"
+)
+
+ggplot2::ggsave(
+    reactome_post_plot,
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy.png"),
+    width = 36,
+    height = 30,
+    units = "cm",
+    dpi = 300
+)
+
+################################################################################################################################################
+######################################################      PLOT SHARED-TREE MULTI-RESULT REACTOME VIEW      ##################################
+################################################################################################################################################
+
+# The multi-result plot keeps one shared Reactome tree on the y axis and then
+# lays each processed result out as its own x-axis facet. This is the simplest
+# public example of the shared-tree mode because both contrasts are bundled in
+# the package example data and can therefore be reproduced by any user.
+
+reactome_multi_plot <- hierGSEA::plot_hier_gsea(
+    x = list(
+        "POST vs PRE" = reactome_post_hier,
+        "REC vs PRE" = reactome_rec_hier
+    ),
+    label_col = "Description",
+    size_col = "abs_NES",
+    colour_col = "p_adjust_hier",
+    show_left_hierarchy = TRUE,
+    tree_width = 0.4,
+    top_n_parents = 3,
+    significance_cutoff = 0.05
+)
+
+ggplot2::ggsave(
+    reactome_multi_plot,
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_and_rec_vs_pre_reactome_hierarchy_multi.pdf"),
+    width = 48,
+    height = 30,
+    units = "cm"
+)
+
+ggplot2::ggsave(
+    reactome_multi_plot,
+    filename = file.path(example_output_dir, "single_fiber_post_vs_pre_and_rec_vs_pre_reactome_hierarchy_multi.png"),
+    width = 48,
+    height = 30,
+    units = "cm",
+    dpi = 300
 )
 
 ################################################################################################################################################
@@ -441,6 +507,11 @@ if (isTRUE(run_mitocarta_example)) {
 readr::write_csv(
     reactome_post_hier$results_tbl,
     file.path(example_output_dir, "single_fiber_post_vs_pre_reactome_hierarchy_results.csv")
+)
+
+readr::write_csv(
+    reactome_rec_hier$results_tbl,
+    file.path(example_output_dir, "single_fiber_rec_vs_pre_reactome_hierarchy_results.csv")
 )
 
 readr::write_csv(

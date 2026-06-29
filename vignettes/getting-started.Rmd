@@ -160,12 +160,38 @@ reactome_plot <- plot_hier_gsea(
 )
 ```
 
+![](figures/getting_started_example_reactome.png)
+
 If `directional = "both"` was used in `hier_gsea()`, the plot keeps the sign of
 the enrichment by separating points into `Down` and `Up` columns. The point
 size defaults to `|NES|`, while the point fill encodes the hierarchy-aware
 adjusted p-value.
 
-## Step 4: control how many branches are shown
+## Step 4: plot multiple results on one shared tree
+
+If you already processed several contrasts with the same backend and ontology,
+you can pass them as a named list into `plot_hier_gsea()`. The plotting method
+will build one shared hierarchy on the y axis and then lay each result out in
+its own x-axis facet using the input-list order.
+
+```{r}
+reactome_multi_plot <- plot_hier_gsea(
+  x = list(
+    "POST vs PRE" = reactome_post_hier,
+    "REC vs PRE" = reactome_rec_hier
+  ),
+  tree_width = 0.40,
+  top_n_parents = 3,
+  significance_cutoff = 0.05
+)
+```
+
+![](figures/getting_started_example_reactome_multi.png)
+
+This is usually the cleanest public-facing multi-result layout because you can
+compare several contrasts without redrawing the pathway tree for each panel.
+
+## Step 5: control how many branches are shown
 
 This is the most important plotting section for everyday use. If you do not
 limit the visible starting branches, GO in particular can become too crowded to
@@ -186,10 +212,12 @@ read.
 reactome_plot_small <- plot_hier_gsea(
   x = reactome_hier,
   tree_width = 0.40,
-  top_n_parents = 3,
+  top_n_parents = 2,
   significance_cutoff = 0.05
 )
 ```
+
+![](figures/getting_started_example_reactome_top_2.png)
 
 ### Manually choose named branches instead
 
@@ -214,15 +242,6 @@ reactome_plot_selected <- plot_hier_gsea(
 - reduce `level_bottom` if long descendant stacks still make the plot too tall
 - use `parent_terms` when a biologically targeted figure is more useful than a global summary
 
-## Example output figure
-
-Below is a real hierarchy-aware Reactome example figure generated from the
-bundled single-fiber workflow. The default branch cap is intentionally low so
-the figure stays readable on a normal page rather than immediately turning into
-a crowded ontology wall.
-
-![](figures/getting_started_example_reactome.png)
-
 ## Additional example views
 
 The same underlying hierarchy-aware result can be visualised in different ways
@@ -233,13 +252,20 @@ depending on whether you want a broad summary or a more focused branch view.
 This example shows a more aggressively simplified overview where only the two
 highest-priority starting branches are retained for plotting.
 
-![](figures/getting_started_example_reactome_top_2.png)
-
 ### Reactome view starting at level 2 and extending to level 5
 
 This example shows a more specific hierarchy window, which is useful when the
 level 1 branches are too broad and you want to start the interpretation deeper
 in the pathway structure.
+
+```{r}
+reactome_plot_level_2_to_5 <- plot_hier_gsea(
+  x = reactome_hier_mid_level,
+  tree_width = 0.40,
+  top_n_parents = 5,
+  significance_cutoff = 0.05
+)
+```
 
 ![](figures/getting_started_example_reactome_level_2_to_5.png)
 

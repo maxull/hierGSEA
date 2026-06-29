@@ -158,3 +158,69 @@ test_that("plot_hier_gsea supports non-root level_top windows and starting-level
         ggplot2::ggplot_build(selected_plot)
     })
 })
+
+test_that("plot_hier_gsea supports list input with a shared tree", {
+    mock_result <- get_example_mitocarta_mock_result()
+
+    mitocarta_a <- hier_gsea(
+        result = mock_result,
+        db = "mitocarta",
+        directional = "both",
+        level_top = 1,
+        level_bottom = 3,
+        alpha = 0.05
+    )
+
+    mitocarta_b <- hier_gsea(
+        result = mock_result,
+        db = "mitocarta",
+        directional = "both",
+        level_top = 1,
+        level_bottom = 3,
+        alpha = 0.10
+    )
+
+    expect_no_error({
+        multi_plot <- plot_hier_gsea(
+            x = list(Placebo = mitocarta_a, Antihistamine = mitocarta_b),
+            tree_width = 0.4,
+            top_n_parents = 2
+        )
+
+        multi_build <- ggplot2::ggplot_build(multi_plot)
+
+        expect_equal(
+            multi_build$layout$panel_params[[1]]$x$get_labels(),
+            c("Down", "Up", "Down", "Up")
+        )
+    })
+})
+
+test_that("plot_hier_gsea list input validates shared metadata", {
+    mock_result <- get_example_mitocarta_mock_result()
+
+    mitocarta_both <- hier_gsea(
+        result = mock_result,
+        db = "mitocarta",
+        directional = "both",
+        level_top = 1,
+        level_bottom = 3,
+        alpha = 0.05
+    )
+
+    mitocarta_up <- hier_gsea(
+        result = mock_result,
+        db = "mitocarta",
+        directional = "up",
+        level_top = 1,
+        level_bottom = 3,
+        alpha = 0.05
+    )
+
+    expect_error(
+        plot_hier_gsea(
+            x = list(mitocarta_both, mitocarta_up)
+        ),
+        "same directional"
+    )
+})
